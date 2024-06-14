@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  minio:
+    image: quay.io/minio/minio
+    command: server /mnt/data --console-address ":9090"
+    ports:
+      - 9000:9000
+      - 9090:9090
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    hostname: minio
+    volumes:
+      - minio-data:/mnt/data
+  
+  db:
+    image: mysql:8.4
+    container_name: mysql_db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  nifi:
+    image: apache/nifi:latest
+    ports:
+      - 8080:8080
+    environment:
+      NIFI_WEB_HTTP_PORT: 8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/nifi-api/flow/status"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    hostname: nifi
+    volumes:
+      - nifi-data:/opt/nifi/nifi-current/logs
+      - nifi-conf:/opt/nifi/nifi-current/conf
+volumes:
+  minio-data:
+  mysql_data:
+  nifi-data:
+  nifi-conf:
